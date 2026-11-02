@@ -78,9 +78,11 @@ class BaseTimesheetStrategy(TimesheetStrategyInterface):
         amount = kwargs.get('amount', None)
         payroll = kwargs.get('payroll', None)
         end_date = kwargs.get('end_date', None)
-        converter = kwargs.get('converter')
-        converter_item = kwargs.get('converter_item')
-        converter_benefit = kwargs.get('converter_benefit')
+        # The calcrule_social_protection converters are stateful since 1.3.0:
+        # to_bill_obj and to_benefit_obj are instance methods (OP-3312)
+        converter = cls._init_converter(kwargs.get('converter'))
+        converter_item = cls._init_converter(kwargs.get('converter_item'))
+        converter_benefit = cls._init_converter(kwargs.get('converter_benefit'))
         payment_cycle = kwargs.get('payment_cycle')
         convert_results = cls._convert_entity_to_bill(
             converter, converter_item, payment_plan, entity, amount, end_date, payment_cycle
@@ -96,6 +98,12 @@ class BaseTimesheetStrategy(TimesheetStrategyInterface):
             payroll.id,
             user
         )
+
+    @staticmethod
+    def _init_converter(converter_cls_or_instance):
+        if isinstance(converter_cls_or_instance, type):
+            return converter_cls_or_instance()
+        return converter_cls_or_instance
 
     @classmethod
     def create_and_save_business_entities(
