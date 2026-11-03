@@ -1,4 +1,3 @@
-from decimal import Decimal
 from unittest.mock import Mock, patch, MagicMock
 from django.test import TestCase
 from django.contrib.contenttypes.models import ContentType
@@ -6,7 +5,7 @@ from contribution_plan.services import PaymentPlan as PaymentPlanService
 from contribution_plan.models import PaymentPlan
 from core.test_helpers import LogInHelper
 from social_protection.models import (
-    BenefitPlan, Beneficiary, GroupBeneficiary, BeneficiaryStatus,
+    Beneficiary, GroupBeneficiary, BeneficiaryStatus,
     BeneficiaryProjectEnrollment, GroupBeneficiaryProjectEnrollment,
 )
 from social_protection.services import BeneficiaryService, GroupBeneficiaryService
@@ -24,16 +23,10 @@ from calcrule_timesheet.strategies import (
     GroupTimesheetStrategy,
     BaseTimesheetStrategy
 )
-from calcrule_timesheet.tests.data import (
-    payment_plan_timesheet_individual,
-    payment_plan_timesheet_group,
-)
 from calcrule_timesheet.tests.test_helpers import (
     create_enrollment,
-    create_time_entry,
     create_multiple_time_entries,
     calculate_expected_payment,
-    merge_dicts,
 )
 
 
@@ -354,3 +347,52 @@ class GroupTimesheetStrategyTest(TestCase):
         expected = calculate_expected_payment(entries_data, base_day_rate)
         self.assertEqual(payment, expected)
         self.assertEqual(payment, 240.0)
+
+    @patch('calcrule_timesheet.strategies.timesheet_base_strategy.PayrollService')
+    @patch('calcrule_timesheet.strategies.timesheet_base_strategy.BillService')
+    @patch('calcrule_timesheet.strategies.timesheet_base_strategy.BenefitConsumptionService')
+    def test_group_strategy_convert(self, mock_benefit_service, mock_bill_service, mock_payroll_service):
+        """Test group strategy conversion to bill and benefit (OP-3312)"""
+        enrollment = self.create_group_beneficiary_with_enrollment()
+        create_multiple_time_entries(
+            enrollment, [{'day_number': 1, 'percent_complete': 100}], self.user.username, is_group=True
+        )
+
+        mock_bill_service.bill_create.return_value = {'success': True, 'data': {'id': 123}}
+        mock_benefit_instance = MagicMock()
+        mock_benefit_instance.create.return_value = {'success': True, 'data': {'id': 456}}
+        mock_benefit_service.return_value = mock_benefit_instance
+
+        result = PaymentPlanService(self.user).create({
+            'code': 'PP-TEST-002',
+            'name': 'Test Group Payment Plan',
+            'calculation': '00000000-0000-0000-0000-000000000000',
+            'benefit_plan_id': str(self.benefit_plan.id),
+            'benefit_plan_type': ContentType.objects.get_for_model(self.benefit_plan),
+            'periodicity': 12
+        })
+        self.assertTrue(result.get('success', False))
+        payment_plan = PaymentPlan.objects.get(id=result['data']['uuid'])
+
+        payment_cycle = Mock()
+        payment_cycle.start_date = '2023-01-01'
+        payment_cycle.end_date = '2023-12-31'
+
+        group_beneficiary = enrollment.group_beneficiary
+        GroupTimesheetStrategy.convert(
+            payment_plan,
+            group=group_beneficiary,
+            enrollment=enrollment,
+            amount=100.0,
+            user=self.user,
+            end_date='2023-12-31',
+            payment_cycle=payment_cycle,
+            payroll=Mock(id=789),
+        )
+
+        mock_bill_service.bill_create.assert_called_once()
+        bill = mock_bill_service.bill_create.call_args.kwargs['convert_results']['bill_data']
+        self.assertEqual(bill['subject_id'], f"{group_beneficiary.id}")
+        self.assertIn(self.group.code, bill['terms'])
+        self.assertEqual(bill['amount_net'], 100.0)
+        mock_benefit_instance.create.assert_called_once()
