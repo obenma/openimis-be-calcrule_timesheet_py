@@ -1,4 +1,3 @@
-from decimal import Decimal
 from unittest.mock import Mock, patch, MagicMock
 from django.test import TestCase
 from django.contrib.contenttypes.models import ContentType
@@ -6,7 +5,7 @@ from contribution_plan.services import PaymentPlan as PaymentPlanService
 from contribution_plan.models import PaymentPlan
 from core.test_helpers import LogInHelper
 from social_protection.models import (
-    BenefitPlan, Beneficiary, GroupBeneficiary, BeneficiaryStatus,
+    Beneficiary, GroupBeneficiary, BeneficiaryStatus,
     BeneficiaryProjectEnrollment, GroupBeneficiaryProjectEnrollment,
 )
 from social_protection.services import BeneficiaryService, GroupBeneficiaryService
@@ -24,16 +23,10 @@ from calcrule_timesheet.strategies import (
     GroupTimesheetStrategy,
     BaseTimesheetStrategy
 )
-from calcrule_timesheet.tests.data import (
-    payment_plan_timesheet_individual,
-    payment_plan_timesheet_group,
-)
 from calcrule_timesheet.tests.test_helpers import (
     create_enrollment,
-    create_time_entry,
     create_multiple_time_entries,
     calculate_expected_payment,
-    merge_dicts,
 )
 
 

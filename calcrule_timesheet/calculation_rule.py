@@ -3,10 +3,8 @@ from calcrule_timesheet.strategies import (
 )
 from calcrule_timesheet.config import CLASS_RULE_PARAM_VALIDATION, DESCRIPTION_TIMESHEET_CALCULATION, FROM_TO
 from core.abs_calculation_rule import AbsStrategy
-from core.signals import *
 from core import datetime
 from contribution_plan.models import PaymentPlan
-from django.contrib.contenttypes.models import ContentType
 
 
 class TimesheetCalculationRule(AbsStrategy):
@@ -23,8 +21,6 @@ class TimesheetCalculationRule(AbsStrategy):
     sub_type = "benefit_plan"
     supports_advanced_criteria = False
     CLASS_NAME_CHECK = ['PaymentPlan']
-
-
 
     @classmethod
     def run_calculation_rules(cls, sender, instance, user, context, **kwargs):

@@ -18,7 +18,6 @@ from calcrule_timesheet.calculation_rule import TimesheetCalculationRule
 from calcrule_timesheet.tests.test_helpers import (
     create_enrollment,
     create_multiple_time_entries,
-    calculate_expected_payment,
     merge_dicts,
 )
 from calcrule_timesheet.tests.data import (
@@ -108,7 +107,6 @@ class TimesheetCalculationIntegrationTest(TestCase):
         create_multiple_time_entries(enrollment, entries_data, self.user.username)
 
         base_day_rate = 50.0
-        expected_payment = calculate_expected_payment(entries_data, base_day_rate)
 
         mock_bill_service.bill_create.return_value = {
             'success': True,
@@ -192,7 +190,6 @@ class TimesheetCalculationIntegrationTest(TestCase):
         )
 
         base_day_rate = 100.0
-        expected_payment = calculate_expected_payment(entries_data, base_day_rate)
 
         mock_bill_service.bill_create.return_value = {
             'success': True,

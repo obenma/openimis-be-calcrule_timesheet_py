@@ -1,5 +1,3 @@
-from core.datetimes.ad_datetime import datetime
-
 payment_plan_timesheet_individual = {
     "benefit_plan_id": None,
     "calculation": None,

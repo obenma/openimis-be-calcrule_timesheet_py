@@ -1,13 +1,9 @@
 import logging
 
-from django.db import transaction
-
-from calcrule_timesheet.apps import CalcruleTimesheetConfig
 from core.models import User
-from core.signals import register_service_signal
 from invoice.models import Bill
 from invoice.services import BillService
-from social_protection.models import BeneficiaryStatus, ProjectStatus
+from social_protection.models import ProjectStatus
 from payroll.services import BenefitConsumptionService, PayrollService
 
 from calcrule_timesheet.strategies.timesheet_strategy_interface import TimesheetStrategyInterface
